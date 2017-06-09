@@ -1,5 +1,19 @@
 {% extends "layout.html" %}
+
 {% block body %}
+  <h1>Macdaddy.biz</h1>
+  <h4>Because it's a business</h4>
+  <a href="{{url_for('login')}}"><img src="{{url_for('static', filename='/img/btn_google_signin_dark_normal_web@2x.png')}}"></img></a>
+  <!--
+  <ul class=navigation>
+    <li><a href="{{ url_for('index') }}">overview</a></li>
+    {% if g.user %}
+        <li><a href="{{ url_for('logout') }}">sign out [{{ g.user.screen_name}}]</a></li>
+    {% else %}
+        <li><a href="{{ url_for('login') }}">sign in</a></li>
+    {% endif %}
+</ul>
+
   <h2>Overview</h2>
   {% if g.user %}
     <p>
@@ -30,4 +44,5 @@
         url_for('static', filename='sign-in.png') }}" alt="sign in"></a>
     </p>
   {% endif %}
+-->
 {% endblock %}
