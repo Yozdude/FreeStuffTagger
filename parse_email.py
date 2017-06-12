@@ -56,7 +56,6 @@ def parse_email_tags(payload):
 
 # Setup logging
 logging.basicConfig(filename="/var/tmp/freestuff.log", level=logging.INFO)
-#logging.basicConfig(filename="/var/tmp/freestuff.log", level=logging.DEBUG)
 #logging.basicConfig(filename="freestuff.log", level=logging.DEBUG)
 
 # Setup the database connection
@@ -110,8 +109,13 @@ elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org
     obj["description"] = payload[payload.find("*OFFER*"):payload.find("<http://groups")].strip()
     entries.append(obj)
 elif ("action@ifttt.com" in msg["from"]) or ("action@ifttt.com" in payload):
-    logging.exception("Got IFTTT Message")
-    logging.exception(payload)
+    obj = {}
+    obj["tagline"] = msg["subject"].replace("New listing:", "")[:msg["subject"].rfind("(")].strip()
+    obj["tags"] = parse_email_tags(obj["tagline"])
+    obj["location"] = msg["subject"][msg["subject"].rfind("(")+1:msg["subject"].rfind(")")].strip()
+    obj["url"] = payload[payload.find("via http://ift")+4:payload.find("<https://links.ifttt")].strip()
+    obj["description"] = payload[payload.find("\n\n\n"):payload.find("From search:")].strip()
+    entries.append(obj)
 
 parsed_entries = []
 for entry in entries:

@@ -28,7 +28,7 @@
                             {% endif %}
                         {% endfor %}
                     </td>
-                    <td><a href="{{entry['url']}}"><button class="success">></button></a></td>
+                    <td><a href="{{entry['url']}}" target="_blank"><button class="success">></button></a></td>
                     <td><button class="error" onclick="Delete('{{entry._id}}')">X</button></td>
                 </tr>
                 <tr id="{{entry._id}}" style="display: none;">
