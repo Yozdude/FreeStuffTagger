@@ -78,7 +78,7 @@ def entries():
     week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
     week_ago.replace(hour=0, minute=0, second=0, microsecond=0)
     entries = db.entries.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
-    return render_template("emails.html", entries=entries)
+    return render_template("entries.html", entries=entries)
 
 
 @app.route('/entries/delete', methods=['POST'])

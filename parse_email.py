@@ -48,6 +48,8 @@ def parse_email_tags(payload):
     if "jean" in payload.lower():
         tags.append("jeans")
         tags.append("clothes")
+    if "bike" in payload.lower():
+        tags.append("bike")
 
     if not tags:
         tags = ["unknown"]
