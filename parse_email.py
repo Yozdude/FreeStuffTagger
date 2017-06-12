@@ -78,7 +78,6 @@ else:
     payload = msg.get_payload()
 
 payload = str(payload)
-logging.info(payload)
 
 entries = []
 if ("alerts@alerts.craigslist.org" in msg["from"]) or ("alerts@alerts.craigslist.org" in payload):
@@ -92,13 +91,26 @@ if ("alerts@alerts.craigslist.org" in msg["from"]) or ("alerts@alerts.craigslist
                 logging.error("line could not be split: %s" % entry)
                 continue
             obj = {}
-            obj["payload"] = e[0][:e[0].rfind("(")].strip()
-            if obj["payload"].lower().find("free") == 0:
-                obj["payload"] = obj["payload"][4:].strip()
+            obj["tagline"] = e[0][:e[0].rfind("(")].strip()
+            if obj["tagline"].lower().find("free") == 0:
+                obj["tagline"] = obj["tagline"][4:].strip()
             obj["location"] = e[0][e[0].rfind("(")+1:e[0].rfind(")")].strip()
-            obj["tags"] = parse_email_tags(obj["payload"])
+            obj["tags"] = parse_email_tags(obj["tagline"])
             obj["url"] = "http://" + e[1][:-1].strip()
+            obj["description"] = ""
             entries.append(obj)
+elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org" in payload):
+    logging.error("Got Freecycle message")
+    logging.error(payload)
+    obj = {}
+    obj["tagline"] = msg["subject"][msg["subject"].find("OFFER:")+6:msg["subject"].rfind("(")].strip()
+    obj["tags"] = parse_email_tags(obj["tagline"])
+    obj["location"] = msg["subject"][msg["subject"].find("[")+1:msg["subject"].find("]")].replace("Freecycle", "").strip()
+    obj["location"] = obj["location"] + ", " + msg["subject"][msg["subject"].rfind("(")+1:-1].strip()
+    obj["url"] = payload[payload.find("<http://groups")+1:]
+    obj["url"] = obj["url"][:obj["url"].find(">")].strip()
+    obj["description"] = payload[payload.find("*OFFER*"):payload.find("<http://groups")].strip()
+    entries.append(obj)
 
 parsed_entries = []
 for entry in entries:
@@ -107,12 +119,12 @@ for entry in entries:
         "from": msg["from"],
         "to": msg["to"],
         "subject": msg["subject"],
-        "payload": entry["payload"],
+        "tagline": entry["tagline"],
         "date": parse_email_timestamp(msg["date"]),
         "location": entry["location"],
         "tags": entry["tags"],
         "url": entry["url"],
-        "raw_input": email_input
+        "description": entry["description"]
     }
     parsed_entries.append(new_entry)
 
@@ -120,7 +132,7 @@ for entry in entries:
 # Log some information to keep track of incoming messages
 logging.info("Got email with subject: %s" % msg["subject"])
 if len(parsed_entries) > 0:
-    db.emails.insert(parsed_entries)
+    db.entries.insert(parsed_entries)
     logging.info("Inserted %s entries into DB" % len(parsed_entries))
 else:
     logging.error("No entries found in email!")

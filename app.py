@@ -70,21 +70,21 @@ def authorized():
     session['google_token'] = (resp['access_token'], '')
     #me = google.get('userinfo')
     #return render_template("test.html", data=me.data, messages=[])
-    return redirect(url_for('emails'))
+    return redirect(url_for('entries'))
 
 
-@app.route('/emails')
-def emails():
+@app.route('/entries')
+def entries():
     week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
     week_ago.replace(hour=0, minute=0, second=0, microsecond=0)
-    emails = db.emails.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
-    return render_template("emails.html", emails=emails)
+    entries = db.entries.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
+    return render_template("emails.html", entries=entries)
 
 
-@app.route('/emails/delete', methods=['POST'])
-def delete_email():
+@app.route('/entries/delete', methods=['POST'])
+def delete_entry():
     id = request.form["id"]
-    result = db.emails.delete_one({'_id': ObjectId(id)})
+    result = db.entries.delete_one({'_id': ObjectId(id)})
     # TODO: Check the result of the delete
     return jsonify(success=True)
 
