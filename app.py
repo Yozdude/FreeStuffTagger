@@ -1,6 +1,7 @@
 import os
 import datetime
 import pymongo
+from bson.objectid import ObjectId
 import logging
 
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
@@ -8,12 +9,11 @@ from flask_oauthlib.client import OAuth
 
 
 # Setup logging
-logging.basicConfig(filename="./app.log")
+logging.basicConfig(filename="./log.log")
 
 # Setup the databsae connection
 client = pymongo.MongoClient()
 db = client.freeStuffTagger
-emails = db.emails
 
 # Setup the Flask app
 app = Flask(__name__)
@@ -41,10 +41,11 @@ google = oauth.remote_app(
 
 @app.route('/')
 def index():
-    if 'google_token' in session:
-        me = google.get('userinfo')
-        return render_template("test.html", data=me.data, messages=[])
-    return redirect(url_for('login'))
+#    if 'google_token' in session:
+#        me = google.get('userinfo')
+#        return render_template("test.html", data=me.data, messages=[])
+#    return redirect(url_for('login'))
+    return render_template("index.html")
 
 
 @app.route('/login')
@@ -67,8 +68,25 @@ def authorized():
             request.args['error_description']
         )
     session['google_token'] = (resp['access_token'], '')
-    me = google.get('userinfo')
-    return render_template("test.html", data=me.data, messages=[])
+    #me = google.get('userinfo')
+    #return render_template("test.html", data=me.data, messages=[])
+    return redirect(url_for('emails'))
+
+
+@app.route('/emails')
+def emails():
+    week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
+    week_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+    emails = db.emails.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
+    return render_template("emails.html", emails=emails)
+
+
+@app.route('/emails/delete', methods=['POST'])
+def delete_email():
+    id = request.form["id"]
+    result = db.emails.delete_one({'_id': ObjectId(id)})
+    # TODO: Check the result of the delete
+    return jsonify(success=True)
 
 @google.tokengetter
 def get_google_oauth_token():

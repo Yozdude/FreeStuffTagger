@@ -8,6 +8,7 @@
         <title>Free Stuff Tagger</title>
         <link rel=stylesheet href="https://cdn.jsdelivr.net/picnicss/6.3.2/picnic.min.css">
         <link rel=stylesheet href="{{url_for('static', filename='style.css')}}">
+        {% block head %}{% endblock %}
     </head>
     <body>
         {% block nav %}{% endblock %}
@@ -16,4 +17,6 @@
     <footer>
         {% block footer %}{% endblock %}
     </footer>
+    <script   src="https://code.jquery.com/jquery-3.2.1.min.js"   integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="   crossorigin="anonymous"></script>
+    {% block scripts %}{% endblock %}
 </html>

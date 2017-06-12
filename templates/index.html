@@ -1,9 +1,26 @@
 {% extends "layout.html" %}
 
+{% block head %}
+    <style>
+        h1 {
+            font-size: 10vw;
+            text-align: center;
+            padding-bottom: 0px;
+        }
+        h4 {
+            font-size: 3vw;
+            text-align: center;
+            padding-top: 0px;
+            font-style: italic;
+        }
+    </style>
+{% endblock %}
+
+
 {% block body %}
-  <h1>Macdaddy.biz</h1>
-  <h4>Because it's a business</h4>
-  <a href="{{url_for('login')}}"><img src="{{url_for('static', filename='/img/btn_google_signin_dark_normal_web@2x.png')}}"></img></a>
+    <h1>Macdaddy.biz</h1>
+    <h4>Because it's a business</h4>
+    <div style="margin: auto; width: 187px;"><a href="{{url_for('login')}}"><img src="{{url_for('static', filename='img/btn_google_signin_dark_normal_web.png')}}"></img></a></div>
   <!--
   <ul class=navigation>
     <li><a href="{{ url_for('index') }}">overview</a></li>

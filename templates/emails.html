@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <h2>Emails</h2>
+    <table class="primary">
+        <thead>
+            <tr>
+                <th></th> <!-- Expand/Contract -->
+                <th>Date</th>
+                <th>Location</th>
+                <th>Payload</th>
+                <th>Tags</th>
+                <th></th> <!-- Link -->
+                <th></th> <!-- Delete -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for email in emails %}
+                <tr>
+                    <td><button onclick="Expand('{{email._id}}')">O</button></td>
+                    <td>{{email["date"].strftime("%b %d, %H:%M")}}</td>
+                    <td>{{email["location"]}}</td>
+                    <td>{{email["payload"]}}</td>
+                    <td>
+                        {% for tag in email.tags %}
+                            <span class="label">{{tag}}</span>
+                        {% endfor %}
+                    </td>
+                    <td><a href="{{email['url']}}"><button>></button></a></td>
+                    <td><button class="error" onclick="Delete('{{email._id}}')">X</button></td>
+                </tr>
+                <tr id="{{email._id}}" style="display: none;">
+                    <td colspan="7">{{email["raw_input"]}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function Expand (id) {
+            $("#" + id).toggle();
+        }
+        function Delete (id) {
+            console.log("Delete" + id)
+            $.post("{{url_for('delete_email')}}", { id: id }, function (response) {
+                console.log(response);
+                // TODO: Remove the entry on the front end (vue.js could help with this)
+            });
+        }
+    </script>
+{% endblock %}
