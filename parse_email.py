@@ -100,8 +100,6 @@ if ("alerts@alerts.craigslist.org" in msg["from"]) or ("alerts@alerts.craigslist
             obj["description"] = ""
             entries.append(obj)
 elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org" in payload):
-    logging.error("Got Freecycle message")
-    logging.error(payload)
     obj = {}
     obj["tagline"] = msg["subject"][msg["subject"].find("OFFER:")+6:msg["subject"].rfind("(")].strip()
     obj["tags"] = parse_email_tags(obj["tagline"])
@@ -111,6 +109,9 @@ elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org
     obj["url"] = obj["url"][:obj["url"].find(">")].strip()
     obj["description"] = payload[payload.find("*OFFER*"):payload.find("<http://groups")].strip()
     entries.append(obj)
+elif ("action@ifttt.com" in msg["from"]) or ("action@ifttt.com" in payload):
+    logging.exception("Got IFTTT Message")
+    logging.exception(payload)
 
 parsed_entries = []
 for entry in entries:
