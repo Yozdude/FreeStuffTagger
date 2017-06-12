@@ -9,6 +9,8 @@
                 <th>Location</th>
                 <th>Tagline</th>
                 <th>Tags</th>
+                <th></th> <!-- Upvote -->
+                <th></th> <!-- Downvote -->
                 <th></th> <!-- Link -->
                 <th></th> <!-- Delete -->
             </tr>
@@ -28,12 +30,14 @@
                             {% endif %}
                         {% endfor %}
                     </td>
+                    <td><button class="success" onclick="Upvote('{{entry._id}}')">^</button></td>
+                    <td><button class="error" onclick="Downvote('{{entry._id}}')">v</button></td>
                     <td><a href="{{entry['url']}}" target="_blank"><button class="success">></button></a></td>
                     <td><button class="error" onclick="Delete('{{entry._id}}')">X</button></td>
                 </tr>
                 <tr id="{{entry._id}}" style="display: none;">
                     <td colspan="2">{{entry["date"].strftime("%b %d, %H:%M")}}</td>
-                    <td colspan="4">{{entry["description"]}}</td>
+                    <td colspan="6">{{entry["description"]}}</td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -51,6 +55,12 @@
                 console.log(response);
                 // TODO: Remove the entry on the front end (vue.js could help with this)
             });
+        }
+        function Update (id) {
+            // TODO
+        }
+        function Downvote (id) {
+            // TODO
         }
     </script>
 {% endblock %}
