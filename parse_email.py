@@ -50,6 +50,9 @@ def parse_email_tags(payload):
         tags.append("clothes")
     if "bike" in payload.lower():
         tags.append("bike")
+    if "rug" in payload.lower():
+        tags.append("rug")
+        tags.append("furniture")
 
     if not tags:
         tags = ["unknown"]
@@ -79,6 +82,7 @@ else:
     payload = msg.get_payload()
 
 payload = str(payload)
+logging.debug("PAYLOAD IS: %s" % payload)
 
 entries = []
 if ("alerts@alerts.craigslist.org" in msg["from"]) or ("alerts@alerts.craigslist.org" in payload):
@@ -99,25 +103,32 @@ if ("alerts@alerts.craigslist.org" in msg["from"]) or ("alerts@alerts.craigslist
             obj["tags"] = parse_email_tags(obj["tagline"])
             obj["url"] = "http://" + e[1][:-1].strip()
             obj["description"] = ""
+            obj["source"] = "craigslist"
             entries.append(obj)
+            logging.debug(obj)
 elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org" in payload):
     obj = {}
     obj["tagline"] = msg["subject"][msg["subject"].find("OFFER:")+6:msg["subject"].rfind("(")].strip()
     obj["tags"] = parse_email_tags(obj["tagline"])
     obj["location"] = msg["subject"][msg["subject"].find("[")+1:msg["subject"].find("]")].replace("Freecycle", "").strip()
     obj["location"] = obj["location"] + ", " + msg["subject"][msg["subject"].rfind("(")+1:-1].strip()
-    obj["url"] = payload[payload.find("<http://groups")+1:]
-    obj["url"] = obj["url"][:obj["url"].find(">")].strip()
-    obj["description"] = payload[payload.find("*OFFER*"):payload.find("<http://groups")].strip()
+    obj["url"] = payload[payload.find("http://groups.freecycle.org")+1:]
+    obj["url"] = obj["url"][:obj["url"].find("\n")].strip()
+    obj["description"] = payload[:payload.find("An image of this item can be seen at")].replace("\n", " ").strip()
+    obj["source"] = "freecycle"
     entries.append(obj)
+    logging.debug(obj)
 elif ("action@ifttt.com" in msg["from"]) or ("action@ifttt.com" in payload):
     obj = {}
-    obj["tagline"] = msg["subject"].replace("New listing:", "")[:msg["subject"].rfind("(")].strip()
+    obj["tagline"] = msg["subject"][:msg["subject"].rfind("(")].replace("New listing:", "").strip()
     obj["tags"] = parse_email_tags(obj["tagline"])
     obj["location"] = msg["subject"][msg["subject"].rfind("(")+1:msg["subject"].rfind(")")].strip()
-    obj["url"] = payload[payload.find("via http://ift")+4:payload.find("<https://links.ifttt")].strip()
-    obj["description"] = payload[payload.find("\n\n\n"):payload.find("From search:")].strip()
+    obj["url"] = payload[payload.find("via http")+4:]
+    obj["url"] = obj["url"][:obj["url"].find("\n")].strip()
+    obj["description"] = payload[:payload.find("From search:")].replace("\n", " ").strip()
+    obj["source"] = "ifttt"
     entries.append(obj)
+    logging.debug(obj)
 
 parsed_entries = []
 for entry in entries:
@@ -131,15 +142,15 @@ for entry in entries:
         "location": entry["location"],
         "tags": entry["tags"],
         "url": entry["url"],
-        "description": entry["description"]
+        "description": entry["description"],
+        "source": entry["source"]
     }
     parsed_entries.append(new_entry)
 
 
 # Log some information to keep track of incoming messages
-logging.info("Got email with subject: %s" % msg["subject"])
+logging.info("Got email with %s entities from %s: %s" % (len(parsed_entities), msg["from"], msg["subject"]))
 if len(parsed_entries) > 0:
     db.entries.insert(parsed_entries)
-    logging.info("Inserted %s entries into DB" % len(parsed_entries))
 else:
     logging.error("No entries found in email!")

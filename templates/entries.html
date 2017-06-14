@@ -2,15 +2,18 @@
 
 {% block body %}
     <h2>Entries</h2>
-    <table class="primary">
+    <table id="entryTable" class="primary">
         <thead>
             <tr>
                 <th></th> <!-- Expand/Contract -->
+                <th>Source</th>
+                <th>Date</th>
                 <th>Location</th>
-                <th>Tagline</th>
                 <th>Tags</th>
-                <th></th> <!-- Upvote -->
-                <th></th> <!-- Downvote -->
+                <th>Tagline</th>
+                <th>Description</th>
+                <!--<th></th> -- Upvote -->
+                <!--<th></th> -- Downvote -->
                 <th></th> <!-- Link -->
                 <th></th> <!-- Delete -->
             </tr>
@@ -18,9 +21,10 @@
         <tbody>
             {% for entry in entries %}
                 <tr>
-                    <td><button onclick="Expand('{{entry._id}}')">O</button></td>
+                    <td><button class="expandBtn">i</button></td>
+                    <td>{{entry["source"]}}</td>
+                    <td>{{entry["date"].strftime("%b %d, %H:%M")}}</td>
                     <td>{{entry["location"]}}</td>
-                    <td>{{entry["tagline"]}}</td>
                     <td>
                         {% for tag in entry.tags %}
                             {% if tag == "unknown" %}
@@ -30,14 +34,14 @@
                             {% endif %}
                         {% endfor %}
                     </td>
+                    <td>{{entry["tagline"]}}</td>
+                    <td>{{entry["description"]}}</td>
+                    <!--
                     <td><button class="success" onclick="Upvote('{{entry._id}}')">^</button></td>
                     <td><button class="error" onclick="Downvote('{{entry._id}}')">v</button></td>
+                    -->
                     <td><a href="{{entry['url']}}" target="_blank"><button class="success">></button></a></td>
                     <td><button class="error" onclick="Delete('{{entry._id}}')">X</button></td>
-                </tr>
-                <tr id="{{entry._id}}" style="display: none;">
-                    <td colspan="2">{{entry["date"].strftime("%b %d, %H:%M")}}</td>
-                    <td colspan="6">{{entry["description"]}}</td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -46,9 +50,43 @@
 
 {% block scripts %}
     <script>
-        function Expand (id) {
-            $("#" + id).toggle();
+        var table;
+
+        function formatChildRow (d) {
+            return '<div style="background-color: #EEE;">' + d[6] + '</div>';
         }
+
+        $(document).ready(function () {
+            table = $("#entryTable").DataTable({
+                "dom": "Blfrtip",
+                "buttons": [
+                    "colvis"
+                ],
+                "lengthMenu": [[50, 100, 250, -1], [50, 100, 250, "All"]],
+                "columnDefs": [
+                    {
+                        "targets": [0, 7, 8],
+                        "searchable": false,
+                        "orderable": false
+                    }, {
+                        "targets": [6],
+                        "visible": false,
+                    }
+                ]
+            });
+
+            $("#entryTable").on("click", "td button.expandBtn", function () {
+                var tr = $(this).closest("tr"),
+                    row = table.row(tr);
+
+                if (row.child.isShown()) {
+                    row.child.hide();
+                } else {
+                    row.child(formatChildRow(row.data())).show()
+                }
+            });
+
+        });
         function Delete (id) {
             console.log("Delete" + id)
             $.post("{{url_for('delete_entry')}}", { id: id }, function (response) {
