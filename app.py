@@ -6,7 +6,31 @@ import logging
 
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 from flask_oauthlib.client import OAuth
-from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+
+from werkzeug.security import check_password_hash
+
+class User():
+    def __init__(self, email, last_login):
+        self.email = email
+        self.last_login = last_login
+
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return self.email
+
+    @staticmethod
+    def validate_login(password_hash, password):
+        return check_password_hash(password_hash, password)
+
 
 
 # Setup logging
@@ -45,7 +69,10 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(userid):
-    return db.users.get_one({"_id": userid})
+    u = db.users.find_one({"email": userid})
+    if not u:
+        return None
+    return User(u["email"], u["last_login"])
 
 
 @login_manager.unauthorized_handler
@@ -60,9 +87,10 @@ def get_google_oauth_token():
 
 @app.route('/login/authorized')
 @google.authorized_handler
-def authorized():
-    resp = google.authorized_response()
+def authorized(resp):
+    #resp = google.authorized_response()
     if resp is None:
+        # TODO: More secure error response
         return 'Access denied: reason=%s error=%s' % (
             request.args['error_reason'],
             request.args['error_description']
@@ -71,14 +99,14 @@ def authorized():
     user_data = google.get('userinfo').data
     user_data["last_login"] = datetime.datetime.now()
     db.users.update_one({"email": user_data["email"]}, {"$set": user_data}, upsert=True)
-    user = db.get_one({"email": user_data["email"]})
-    login_user(user)
+    u = db.users.find_one({"email": user_data["email"]})
+    login_user(User(u["email"], u["last_login"]))
     return redirect(url_for('entries'))
 
 
 @app.route('/')
 def index():
-    if current_user.is_authenticated():
+    if current_user.is_authenticated:
         return redirect(url_for("entries"))
 #    if 'google_token' in session:
 #        me = google.get('userinfo')
@@ -89,7 +117,7 @@ def index():
 
 @app.route('/login')
 def login():
-    if current_user.is_authenticated():
+    if current_user.is_authenticated:
         return redirect(url_for('entries'))
     return google.authorize(callback=url_for('authorized', _external=True))
 
