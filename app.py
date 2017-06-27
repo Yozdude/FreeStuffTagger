@@ -6,6 +6,7 @@ import logging
 
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 from flask_oauthlib.client import OAuth
+from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
 
 
 # Setup logging
@@ -19,8 +20,8 @@ db = client.freeStuffTagger
 app = Flask(__name__)
 app.config['GOOGLE_ID'] = os.environ["FREESTUFF_GOOGLE_ID"]
 app.config['GOOGLE_SECRET'] = os.environ["FREESTUFF_GOOGLE_SECRET"]
-app.debug = True
 app.secret_key = os.environ["FREESTUFF_SECRET_KEY"]
+app.debug = True # TODO: Disable in production
 oauth = OAuth(app)
 
 # Setup OAuth
@@ -38,28 +39,27 @@ google = oauth.remote_app(
     authorize_url='https://accounts.google.com/o/oauth2/auth',
 )
 
-
-@app.route('/')
-def index():
-#    if 'google_token' in session:
-#        me = google.get('userinfo')
-#        return render_template("test.html", data=me.data, messages=[])
-#    return redirect(url_for('login'))
-    return render_template("index.html")
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
-@app.route('/login')
-def login():
-    return google.authorize(callback=url_for('authorized', _external=True))
+@login_manager.user_loader
+def load_user(userid):
+    return db.users.get_one({"_id": userid})
 
 
-@app.route('/logout')
-def logout():
-    session.pop('google_token', None)
+@login_manager.unauthorized_handler
+def unauthorized():
     return redirect(url_for('index'))
 
 
+@google.tokengetter
+def get_google_oauth_token():
+    return session.get('google_token')
+
+
 @app.route('/login/authorized')
+@google.authorized_handler
 def authorized():
     resp = google.authorized_response()
     if resp is None:
@@ -71,10 +71,39 @@ def authorized():
     user_data = google.get('userinfo').data
     user_data["last_login"] = datetime.datetime.now()
     db.users.update_one({"email": user_data["email"]}, {"$set": user_data}, upsert=True)
+    user = db.get_one({"email": user_data["email"]})
+    login_user(user)
     return redirect(url_for('entries'))
 
 
+@app.route('/')
+def index():
+    if current_user.is_authenticated():
+        return redirect(url_for("entries"))
+#    if 'google_token' in session:
+#        me = google.get('userinfo')
+#        return render_template("test.html", data=me.data, messages=[])
+#    return redirect(url_for('login'))
+    return render_template("index.html")
+
+
+@app.route('/login')
+def login():
+    if current_user.is_authenticated():
+        return redirect(url_for('entries'))
+    return google.authorize(callback=url_for('authorized', _external=True))
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    session.pop('google_token', None)
+    logout_user()
+    return redirect(url_for('index'))
+
+
 @app.route('/entries')
+@login_required
 def entries():
     week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
     week_ago.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -83,6 +112,7 @@ def entries():
 
 
 @app.route('/entries/delete', methods=['POST'])
+@login_required
 def delete_entry():
     id = request.form["id"]
     result = db.entries.delete_one({'_id': ObjectId(id)})
@@ -91,16 +121,12 @@ def delete_entry():
 
 
 @app.route('/entries/viewed', methods=['POST'])
+@login_required
 def entry_viewed():
     id = request.form["id"]
     result = db.entries.update_one({'_id': ObjectId(id)}, {"$set": { "viewed": True }})
     # TODO: Check the result of the update
     return jsonify(success=True)
-
-
-@google.tokengetter
-def get_google_oauth_token():
-    return session.get('google_token')
 
 
 if __name__ == '__main__':
