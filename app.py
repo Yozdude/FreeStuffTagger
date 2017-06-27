@@ -68,8 +68,9 @@ def authorized():
             request.args['error_description']
         )
     session['google_token'] = (resp['access_token'], '')
-    #me = google.get('userinfo')
-    #return render_template("test.html", data=me.data, messages=[])
+    user_data = google.get('userinfo').data
+    user_data["last_login"] = datetime.datetime.now()
+    db.users.update_one({"email": user_data["email"]}, {"$set": user_data}, upsert=True)
     return redirect(url_for('entries'))
 
 
@@ -87,6 +88,15 @@ def delete_entry():
     result = db.entries.delete_one({'_id': ObjectId(id)})
     # TODO: Check the result of the delete
     return jsonify(success=True)
+
+
+@app.route('/entries/viewed', methods=['POST'])
+def entry_viewed():
+    id = request.form["id"]
+    result = db.entries.update_one({'_id': ObjectId(id)}, {"$set": { "viewed": True }})
+    # TODO: Check the result of the update
+    return jsonify(success=True)
+
 
 @google.tokengetter
 def get_google_oauth_token():

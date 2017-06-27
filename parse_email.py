@@ -112,7 +112,7 @@ elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org
     obj["tags"] = parse_email_tags(obj["tagline"])
     obj["location"] = msg["subject"][msg["subject"].find("[")+1:msg["subject"].find("]")].replace("Freecycle", "").strip()
     obj["location"] = obj["location"] + ", " + msg["subject"][msg["subject"].rfind("(")+1:-1].strip()
-    obj["url"] = payload[payload.find("http://groups.freecycle.org")+1:]
+    obj["url"] = payload[payload.find("http://groups.freecycle.org"):]
     obj["url"] = obj["url"][:obj["url"].find("\n")].strip()
     obj["description"] = payload[:payload.find("An image of this item can be seen at")].replace("\n", " ").strip()
     obj["source"] = "freecycle"
@@ -143,13 +143,14 @@ for entry in entries:
         "tags": entry["tags"],
         "url": entry["url"],
         "description": entry["description"],
-        "source": entry["source"]
+        "source": entry["source"],
+        "visited": False
     }
     parsed_entries.append(new_entry)
 
 
 # Log some information to keep track of incoming messages
-logging.info("Got email with %s entities from %s: %s" % (len(parsed_entities), msg["from"], msg["subject"]))
+logging.info("Got email with %s entities from %s: %s" % (len(parsed_entries), msg["from"], msg["subject"]))
 if len(parsed_entries) > 0:
     db.entries.insert(parsed_entries)
 else:

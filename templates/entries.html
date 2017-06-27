@@ -20,7 +20,11 @@
         </thead>
         <tbody>
             {% for entry in entries %}
-                <tr>
+                <tr data-id="{{entry._id}}"
+                {% if entry.viewed %}
+                class="viewed"
+                {% endif %}
+                >
                     <td><button class="expandBtn">i</button></td>
                     <td>{{entry["source"]}}</td>
                     <td>{{entry["date"].strftime("%b %d, %H:%M")}}</td>
@@ -40,7 +44,7 @@
                     <td><button class="success" onclick="Upvote('{{entry._id}}')">^</button></td>
                     <td><button class="error" onclick="Downvote('{{entry._id}}')">v</button></td>
                     -->
-                    <td><a href="{{entry['url']}}" target="_blank"><button class="success">></button></a></td>
+                    <td><a href="{{entry['url']}}" target="_blank" class="item-external"><button class="success">></button></a></td>
                     <td><button class="error" onclick="Delete('{{entry._id}}')">X</button></td>
                 </tr>
             {% endfor %}
@@ -86,15 +90,21 @@
                 }
             });
 
+            $("a.item-external").on("click", function () {
+                var tr = $(this).closest("tr"),
+                    id = tr.data("id");
+               $.post("{{url_for('entry_viewed')}}", { id: id }, function (response) {
+                    tr.addClass("viewed");
+                    // TODO: Check response
+                });
+            });
         });
         function Delete (id) {
-            console.log("Delete" + id)
             $.post("{{url_for('delete_entry')}}", { id: id }, function (response) {
-                console.log(response);
-                // TODO: Remove the entry on the front end (vue.js could help with this)
+                // TODO: Check response and remove the entry on the front end (vue.js could help with this)
             });
         }
-        function Update (id) {
+        function Upvote (id) {
             // TODO
         }
         function Downvote (id) {

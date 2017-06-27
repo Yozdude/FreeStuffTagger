@@ -47,3 +47,7 @@ input[name="openid"] {
 h1, h2 {
     font-weight: normal;
 }
+
+.viewed {
+    background-color: #fcc !important;
+}
