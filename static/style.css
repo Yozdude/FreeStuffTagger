@@ -1,6 +1,6 @@
 body {
     font-family: 'Georgia', serif;
-    font-size: 16px;
+    font-size: 14px;
     margin: 30px;
     padding: 0;
 }
@@ -50,4 +50,8 @@ h1, h2 {
 
 .viewed {
     background-color: #fcc !important;
+}
+
+tbody {
+    font-size: 12px;
 }
