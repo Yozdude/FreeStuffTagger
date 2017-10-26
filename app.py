@@ -99,6 +99,7 @@ def authorized(resp):
         )
     session['google_token'] = (resp['access_token'], '')
     user_data = google.get('userinfo').data
+    user_data["previous_last_login"] = user_data["last_login"]
     user_data["last_login"] = datetime.datetime.now()
     db.users.update_one({"email": user_data["email"]}, {"$set": user_data}, upsert=True)
     u = db.users.find_one({"email": user_data["email"]})
@@ -137,15 +138,24 @@ def logout():
 def entries():
     week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
     week_ago.replace(hour=0, minute=0, second=0, microsecond=0)
-    entries = db.entries.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
-    return render_template("entries.html", entries=entries, GOOGLE_MAPS_API_KEY=app.config["GOOGLE_API_CLIENT_KEY"])
+    week_ago_entries = db.entries.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
+
+    user_email = db.users.find_one({"email": current_user["email"]})
+    since_last_login = datetime.datetime.now() - datetime.timedelta(days=7)
+    since_last_login.replace(hour=0, minute=0, second=0, microsecond=0)
+    since_last_login_entries = db.entries.find({"date": {"$gte": since_last_login}}).sort([("date", -1)])
+    if len(since_last_login_entries) > len(week_ago_entries):
+        since_last_login_entries = week_ago_entries
+
+    return render_template("entries.html", entries=week_ago_entries, new_entry_ids=[e._id for e in since_last_login_entries], GOOGLE_MAPS_API_KEY=app.config["GOOGLE_API_CLIENT_KEY"])
 
 
 @app.route('/entries/delete', methods=['POST'])
 @login_required
 def delete_entry():
     id = request.form["id"]
-    result = db.entries.delete_one({'_id': ObjectId(id)})
+    #result = db.entries.delete_one({'_id': ObjectId(id)})
+    # TODO: Don't actually delete it, just archive it
     # TODO: Check the result of the delete
     return jsonify(success=True)
 

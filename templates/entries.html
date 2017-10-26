@@ -119,36 +119,6 @@
                     // TODO: Check response
                 });
             });
-
-            $("#entryTable").on("draw.dt", function () {
-                var visibleRows = table.$('tr', {"page":"current"}),
-                    data = table.rows(visibleRows).data();
-                for (var i = 0; i < map_markers.length; i++) {
-                    map_markers[i].setMap(null);
-                }
-                map_markers.length = 0;
-                for (var i = 0; i < data.length; i++) {
-                    var tagline = data[i][5],
-                        location = data[i][6],
-                        description = data[i][7],
-                        lat = Number(String(data[i][8]).replace(/[^\d.-]/g, "")),
-                        lng = Number(String(data[i][9]).replace(/[^\d.-]/g, "")),
-                        url = data[i][10],
-                        marker = new google.maps.Marker({
-                            position: { lat: lat, lng: lng },
-                            map: map,
-                            title: tagline
-                        });
-                    bindInfoWindow(marker, map, '<h4>' + tagline + '</h1>' +
-                                                '<h4>' + location + '</h4>' +
-                                                '<div>' + description + '</div>' +
-                                                '<div style="font-size: 18px;"><a href="' + url + '" target="_blank">Link</a></div>');
-
-                    map_markers.push(marker);
-                }
-            });
-
-            table.draw();
         });
         function Delete (id) {
             // TODO: Make this hides entries instead of deleting them so that we keep all the data
@@ -163,19 +133,62 @@
             // TODO
         }
 
-        function bindInfoWindow(marker, map, html) {
+        function bindInfoWindow(marker, map, content) {
             marker.addListener('click', function() {
-                infowindow.setContent(html);
+                infowindow.setContent(content);
                 infowindow.open(map, this);
             });
+        }
+
+        function clearMapMarkers() {
+            for (var i = 0; i < map_markers.length; i++) {
+                map_markers[i].setMap(null);
+            }
+            map_markers.length = 0;
         }
 
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 12,
-                center: { lat: 37.773972, lng: -122.431297 }
+                center: { lat: 37.751425, lng: -122.434130 }
             });
             infowindow = new google.maps.InfoWindow({ maxWidth: 300 });
+
+            $("#entryTable").on("draw.dt", function () {
+                var visibleRows = table.$('tr', {"page":"current"}),
+                    data = table.rows(visibleRows).data();
+                clearMapMarkers();
+                marker_location_dict = {};
+                for (var i = 0; i < data.length; i++) {
+                    var tagline = data[i][5],
+                        lat = Number(String(data[i][8]).replace(/[^\d.-]/g, "")),
+                        lng = Number(String(data[i][9]).replace(/[^\d.-]/g, "")),
+                        url = data[i][10],
+                        content = '<div class="marker-entry"><a href="' + url + '" target="_blank">' + tagline + '</a></div>'
+                        dict_key = String(lat) + String(lng);
+                    if (marker_location_dict[dict_key]) {
+                        var marker = marker_location_dict[dict_key];
+                        marker.content += content;
+                        marker.label = String(Number(marker.label) + 1)
+                    } else {
+                        var marker = new google.maps.Marker({
+                            position: { lat: lat, lng: lng },
+                            map: map,
+                            label: "1"
+                        });
+                        marker.content = content;
+                        map_markers.push(marker);
+                        marker_location_dict[dict_key] = marker;
+                    }
+                }
+
+                for (var k in marker_location_dict) {
+                    var marker = marker_location_dict[k];
+                    bindInfoWindow(marker, map, marker.content);
+                }
+            });
+
+            table.draw();
         }
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key={{GOOGLE_MAPS_API_KEY}}&callback=initMap" type="text/javascript"></script>
