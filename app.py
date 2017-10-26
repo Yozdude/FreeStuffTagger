@@ -44,6 +44,8 @@ db = client.freeStuffTagger
 app = Flask(__name__)
 app.config['GOOGLE_ID'] = os.environ["FREESTUFF_GOOGLE_ID"]
 app.config['GOOGLE_SECRET'] = os.environ["FREESTUFF_GOOGLE_SECRET"]
+app.config['GOOGLE_API_SERVER_KEY'] = os.environ["FREESTUFF_GOOGLE_API_SERVER_KEY"]
+app.config['GOOGLE_API_CLIENT_KEY'] = os.environ["FREESTUFF_GOOGLE_API_CLIENT_KEY"]
 app.secret_key = os.environ["FREESTUFF_SECRET_KEY"]
 app.debug = True # TODO: Disable in production
 oauth = OAuth(app)
@@ -136,7 +138,7 @@ def entries():
     week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
     week_ago.replace(hour=0, minute=0, second=0, microsecond=0)
     entries = db.entries.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
-    return render_template("entries.html", entries=entries)
+    return render_template("entries.html", entries=entries, GOOGLE_MAPS_API_KEY=app.config["GOOGLE_API_CLIENT_KEY"])
 
 
 @app.route('/entries/delete', methods=['POST'])

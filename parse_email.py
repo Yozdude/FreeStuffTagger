@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+import os
 import sys
 import email
 import email.utils
 import pymongo
 import datetime
 import logging
+import googlemaps
+import redis
 
 
 def parse_email_timestamp(timestamp):
@@ -59,9 +62,46 @@ def parse_email_tags(payload):
     tags = list(set(tags))
     return tags
 
+def location_to_lat_long(location):
+    ''' Free version, with some restrtictions. See http://wiki.openstreetmap.org/wiki/Nominatim
+    from geopy import geocoders
+
+    geocoder = geocoders.Nominatim()
+
+    location = geocoder.geocode("palo alto, ca", timeout=10)
+    print(location.address)
+    print((location.latitude, location.longitude))
+    print(location.raw)
+    '''
+
+    # Connect to Redis to handle location geocoding
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    if r.exists(location):
+        lat_lng = r.lrange(location, 0, 1)
+        return (lat_lng[0], lat_lng[1])
+
+    # Setup the Google Maps API
+    try:
+        gmaps = googlemaps.Client(key=GOOGLE_API_SERVER_KEY)
+        geocode = gmaps.geocode(location)
+        if geocode:
+            lat = float(geocode[0]["geometry"]["location"]["lat"])
+            lng = float(geocode[0]["geometry"]["location"]["lng"])
+            r.rpush(location, lat)
+            r.rpush(location, lng)
+            return (lat, lng)
+    except:
+        pass
+
+    # No idea where it is
+    return (None, None)
+
 # Setup logging
-logging.basicConfig(filename="/var/tmp/freestuff.log", level=logging.INFO)
+logging.basicConfig(filename="/var/tmp/freestuff.log", level=logging.WARNING)
+#logging.basicConfig(filename="freestuff.log", level=logging.INFO)
 #logging.basicConfig(filename="freestuff.log", level=logging.DEBUG)
+
+GOOGLE_API_SERVER_KEY = "your_superseekrit_key"
 
 # Setup the database connection
 client = pymongo.MongoClient()
@@ -96,42 +136,53 @@ if ("alerts@alerts.craigslist.org" in msg["from"]) or ("alerts@alerts.craigslist
                 logging.error("line could not be split: %s" % entry)
                 continue
             obj = {}
-            obj["tagline"] = e[0][:e[0].rfind("(")].strip()
+            obj["tagline"] = unicode(e[0][:e[0].rfind("(")].strip())
             if obj["tagline"].lower().find("free") == 0:
                 obj["tagline"] = obj["tagline"][4:].strip()
-            obj["location"] = e[0][e[0].rfind("(")+1:e[0].rfind(")")].strip()
+            obj["location"] = unicode(e[0][e[0].rfind("(")+1:e[0].rfind(")")].strip())
             obj["tags"] = parse_email_tags(obj["tagline"])
-            obj["url"] = "http://" + e[1][:-1].strip()
+            obj["url"] = unicode("http://" + e[1][:-1].strip())
             obj["description"] = ""
             obj["source"] = "craigslist"
             entries.append(obj)
             logging.debug(obj)
 elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org" in payload):
     obj = {}
-    obj["tagline"] = msg["subject"][msg["subject"].find("OFFER:")+6:msg["subject"].rfind("(")].strip()
-    obj["tags"] = parse_email_tags(obj["tagline"])
+    obj["tagline"] = unicode(msg["subject"][msg["subject"].find("OFFER:")+6:msg["subject"].rfind("(")].strip())
+    obj["tags"] = unicode(parse_email_tags(obj["tagline"]))
     obj["location"] = msg["subject"][msg["subject"].find("[")+1:msg["subject"].find("]")].replace("Freecycle", "").strip()
     obj["location"] = obj["location"] + ", " + msg["subject"][msg["subject"].rfind("(")+1:-1].strip()
+    obj["location"] = unicode(obj["location"].replace("\n", ""))
     obj["url"] = payload[payload.find("http://groups.freecycle.org"):]
-    obj["url"] = obj["url"][:obj["url"].find("\n")].strip()
-    obj["description"] = payload[:payload.find("An image of this item can be seen at")].replace("\n", " ").strip()
+    obj["url"] = unicode(obj["url"][:obj["url"].find("\n")].strip())
+    obj["description"] = unicode(payload[:payload.find("An image of this item can be seen at")].replace("\n", " ").strip())
     obj["source"] = "freecycle"
     entries.append(obj)
     logging.debug(obj)
 elif ("action@ifttt.com" in msg["from"]) or ("action@ifttt.com" in payload):
     obj = {}
-    obj["tagline"] = msg["subject"][:msg["subject"].rfind("(")].replace("New listing:", "").strip()
+    obj["tagline"] = unicode(msg["subject"][:msg["subject"].rfind("(")].replace("New listing:", "").strip())
     obj["tags"] = parse_email_tags(obj["tagline"])
     obj["location"] = msg["subject"][msg["subject"].rfind("(")+1:msg["subject"].rfind(")")].strip()
+    obj["location"] = unicode(obj["location"].replace("\n", ""))
     obj["url"] = payload[payload.find("via http")+4:]
-    obj["url"] = obj["url"][:obj["url"].find("\n")].strip()
-    obj["description"] = payload[:payload.find("From search:")].replace("\n", " ").strip()
+    obj["url"] = unicode(obj["url"][:obj["url"].find("\n")].strip())
+    obj["description"] = unicode(payload[:payload.find("From search:")].replace("\n", " ").strip())
     obj["source"] = "ifttt"
     entries.append(obj)
     logging.debug(obj)
 
 parsed_entries = []
 for entry in entries:
+    # Get the lat long for displaying on a map
+    try:
+        lat_long = location_to_lat_long(entry["location"])
+        lat_long = [float(lat_long[0]), float(lat_long[1])]
+    except Exception as e:
+        logging.error("Exception getting lat long")
+        logging.exception(e)
+        lat_long = (None, None)
+
     # Format the data nicely for MongoDB
     new_entry = {
         "from": msg["from"],
@@ -140,6 +191,8 @@ for entry in entries:
         "tagline": entry["tagline"],
         "date": parse_email_timestamp(msg["date"]),
         "location": entry["location"],
+        "lat": lat_long[0],
+        "long": lat_long[1],
         "tags": entry["tags"],
         "url": entry["url"],
         "description": entry["description"],

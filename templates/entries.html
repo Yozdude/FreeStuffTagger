@@ -1,5 +1,16 @@
 {% extends "layout.html" %}
 
+{% block nav %}
+<nav>
+    <a href="#" class="brand">
+        <span>Free Stuff Tagger</span>
+    </a>
+    <div class="menu">
+        <label for"preferences_modal class="button">Preferences</labal>
+    </div>
+</nav>
+{% endblock %}
+
 {% block body %}
     <h2>Entries</h2>
     <table id="entryTable" class="primary compact hover">
@@ -13,6 +24,9 @@
                 <th>Tagline</th>
                 <th>Location</th>
                 <th>Description</th>
+                <th>Lat</th>
+                <th>Long</th>
+                <th>URL</th>
             </tr>
         </thead>
         <tbody>
@@ -38,15 +52,25 @@
                     <td>{{entry["tagline"]}}</td>
                     <td>{{entry["location"]}}</td>
                     <td>{{entry["description"]}}</td>
+                    <td>{{entry["lat"]}}</td>
+                    <td>{{entry["long"]}}</td>
+                    <td>{{entry["url"]}}</td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
+    <div id="map" style="height: 520px;"></div>
+
+    <div class="preferences_modal">
+        <h3>Preferences</h3>
+    </div>
 {% endblock %}
 
 {% block scripts %}
     <script>
-        var table;
+        var table, map,
+            map_markers = [],
+            infoWindow;
 
         function formatChildRow (d) {
             return '<div style="background-color: #EEE;">' + d[6] + '</div>';
@@ -67,6 +91,11 @@
                     }, {
                         "targets": [2, 3, 4, 6],
                         "visible": false,
+                    }, {
+                        "targets": [8, 9],
+                        "searchable": false,
+                        "orderable": false,
+                        "visible": false
                     }
                 ]
             });
@@ -90,8 +119,39 @@
                     // TODO: Check response
                 });
             });
+
+            $("#entryTable").on("draw.dt", function () {
+                var visibleRows = table.$('tr', {"page":"current"}),
+                    data = table.rows(visibleRows).data();
+                for (var i = 0; i < map_markers.length; i++) {
+                    map_markers[i].setMap(null);
+                }
+                map_markers.length = 0;
+                for (var i = 0; i < data.length; i++) {
+                    var tagline = data[i][5],
+                        location = data[i][6],
+                        description = data[i][7],
+                        lat = Number(String(data[i][8]).replace(/[^\d.-]/g, "")),
+                        lng = Number(String(data[i][9]).replace(/[^\d.-]/g, "")),
+                        url = data[i][10],
+                        marker = new google.maps.Marker({
+                            position: { lat: lat, lng: lng },
+                            map: map,
+                            title: tagline
+                        });
+                    bindInfoWindow(marker, map, '<h4>' + tagline + '</h1>' +
+                                                '<h4>' + location + '</h4>' +
+                                                '<div>' + description + '</div>' +
+                                                '<div style="font-size: 18px;"><a href="' + url + '" target="_blank">Link</a></div>');
+
+                    map_markers.push(marker);
+                }
+            });
+
+            table.draw();
         });
         function Delete (id) {
+            // TODO: Make this hides entries instead of deleting them so that we keep all the data
             $.post("{{url_for('delete_entry')}}", { id: id }, function (response) {
                 // TODO: Check response and remove the entry on the front end (vue.js could help with this)
             });
@@ -102,5 +162,21 @@
         function Downvote (id) {
             // TODO
         }
+
+        function bindInfoWindow(marker, map, html) {
+            marker.addListener('click', function() {
+                infowindow.setContent(html);
+                infowindow.open(map, this);
+            });
+        }
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: { lat: 37.773972, lng: -122.431297 }
+            });
+            infowindow = new google.maps.InfoWindow({ maxWidth: 300 });
+        }
     </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{GOOGLE_MAPS_API_KEY}}&callback=initMap" type="text/javascript"></script>
 {% endblock %}

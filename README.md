@@ -1,12 +1,15 @@
 TODO:
-- Integrate Vue.js
-- Periodically delete old emails
 - Indicate new emails since last visit (only emails the user has not seen before)
-- Add map view that indicates posts based on their location
+- Handle multiple markers on a single location
 - Add the ability to set alerts for specific triggers (text). Have alerts send a text
-- Add better tagging to emails (ML)
+- Add better tagging to emails (ML). Consider trying out google NLP.
 - Add the ability to upvote/downvote emails to customize what you see and how ordering of emails works
 - Live streaming of emails as they arrive
 
+Consider:
+- Integrate Vue.js for single-page functionality
+
 Notes:
-Logging goes to "/var/tmp/<logfile>"
+- Logging goes to `/var/tmp/<logfile>`
+- [Google Maps Library](https://github.com/googlemaps/google-maps-services-python)
+- Email script-running set in `/etc/aliases`
