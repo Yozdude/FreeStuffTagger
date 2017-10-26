@@ -152,7 +152,7 @@
                 zoom: 12,
                 center: { lat: 37.751425, lng: -122.434130 }
             });
-            infowindow = new google.maps.InfoWindow({ maxWidth: 300 });
+            infowindow = new google.maps.InfoWindow({});
 
             $("#entryTable").on("draw.dt", function () {
                 var visibleRows = table.$('tr', {"page":"current"}),

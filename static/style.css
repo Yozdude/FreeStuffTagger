@@ -56,8 +56,11 @@ tbody {
     font-size: 12px;
 }
 
+.marker-entry:before {
+    content: "• "
+}
+
 .marker-entry {
-    border-left: 1px solid #000;
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 4px;
 }

@@ -99,7 +99,6 @@ def authorized(resp):
         )
     session['google_token'] = (resp['access_token'], '')
     user_data = google.get('userinfo').data
-    user_data["previous_last_login"] = user_data["last_login"]
     user_data["last_login"] = datetime.datetime.now()
     db.users.update_one({"email": user_data["email"]}, {"$set": user_data}, upsert=True)
     u = db.users.find_one({"email": user_data["email"]})
@@ -140,14 +139,14 @@ def entries():
     week_ago.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago_entries = db.entries.find({"date": {"$gte": week_ago}}).sort([("date", -1)])
 
-    user_email = db.users.find_one({"email": current_user["email"]})
-    since_last_login = datetime.datetime.now() - datetime.timedelta(days=7)
-    since_last_login.replace(hour=0, minute=0, second=0, microsecond=0)
-    since_last_login_entries = db.entries.find({"date": {"$gte": since_last_login}}).sort([("date", -1)])
-    if len(since_last_login_entries) > len(week_ago_entries):
-        since_last_login_entries = week_ago_entries
+    user = db.users.find_one({"email": current_user.email})
+    if "last_data_view" in user:
+        # TODO: If the previous last login was greater than a week ago don't search for it, just default to the last week of entries
+        since_last_view_entries = db.entries.find({"date": {"$gte": user["last_data_view"]}}).sort([("date", -1)])
+    user["last_data_view"] = datetime.datetime.now()
+    db.users.update_one({"email": user["email"]}, {"$set": user}, upsert=True)
 
-    return render_template("entries.html", entries=week_ago_entries, new_entry_ids=[e._id for e in since_last_login_entries], GOOGLE_MAPS_API_KEY=app.config["GOOGLE_API_CLIENT_KEY"])
+    return render_template("entries.html", entries=week_ago_entries, GOOGLE_MAPS_API_KEY=app.config["GOOGLE_API_CLIENT_KEY"])
 
 
 @app.route('/entries/delete', methods=['POST'])

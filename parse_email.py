@@ -101,7 +101,7 @@ logging.basicConfig(filename="/var/tmp/freestuff.log", level=logging.WARNING)
 #logging.basicConfig(filename="freestuff.log", level=logging.INFO)
 #logging.basicConfig(filename="freestuff.log", level=logging.DEBUG)
 
-GOOGLE_API_SERVER_KEY = "your_superseekrit_key"
+GOOGLE_API_SERVER_KEY = "secret"
 
 # Setup the database connection
 client = pymongo.MongoClient()
