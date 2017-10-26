@@ -136,38 +136,38 @@ if ("alerts@alerts.craigslist.org" in msg["from"]) or ("alerts@alerts.craigslist
                 logging.error("line could not be split: %s" % entry)
                 continue
             obj = {}
-            obj["tagline"] = unicode(e[0][:e[0].rfind("(")].strip())
+            obj["tagline"] = str(e[0][:e[0].rfind("(")].strip())
             if obj["tagline"].lower().find("free") == 0:
                 obj["tagline"] = obj["tagline"][4:].strip()
-            obj["location"] = unicode(e[0][e[0].rfind("(")+1:e[0].rfind(")")].strip())
+            obj["location"] = str(e[0][e[0].rfind("(")+1:e[0].rfind(")")].strip())
             obj["tags"] = parse_email_tags(obj["tagline"])
-            obj["url"] = unicode("http://" + e[1][:-1].strip())
+            obj["url"] = str("http://" + e[1][:-1].strip())
             obj["description"] = ""
             obj["source"] = "craigslist"
             entries.append(obj)
             logging.debug(obj)
 elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org" in payload):
     obj = {}
-    obj["tagline"] = unicode(msg["subject"][msg["subject"].find("OFFER:")+6:msg["subject"].rfind("(")].strip())
-    obj["tags"] = unicode(parse_email_tags(obj["tagline"]))
+    obj["tagline"] = str(msg["subject"][msg["subject"].find("OFFER:")+6:msg["subject"].rfind("(")].strip())
+    obj["tags"] = str(parse_email_tags(obj["tagline"]))
     obj["location"] = msg["subject"][msg["subject"].find("[")+1:msg["subject"].find("]")].replace("Freecycle", "").strip()
     obj["location"] = obj["location"] + ", " + msg["subject"][msg["subject"].rfind("(")+1:-1].strip()
-    obj["location"] = unicode(obj["location"].replace("\n", ""))
+    obj["location"] = str(obj["location"].replace("\n", ""))
     obj["url"] = payload[payload.find("http://groups.freecycle.org"):]
-    obj["url"] = unicode(obj["url"][:obj["url"].find("\n")].strip())
-    obj["description"] = unicode(payload[:payload.find("An image of this item can be seen at")].replace("\n", " ").strip())
+    obj["url"] = str(obj["url"][:obj["url"].find("\n")].strip())
+    obj["description"] = str(payload[:payload.find("An image of this item can be seen at")].replace("\n", " ").strip())
     obj["source"] = "freecycle"
     entries.append(obj)
     logging.debug(obj)
 elif ("action@ifttt.com" in msg["from"]) or ("action@ifttt.com" in payload):
     obj = {}
-    obj["tagline"] = unicode(msg["subject"][:msg["subject"].rfind("(")].replace("New listing:", "").strip())
+    obj["tagline"] = str(msg["subject"][:msg["subject"].rfind("(")].replace("New listing:", "").strip())
     obj["tags"] = parse_email_tags(obj["tagline"])
     obj["location"] = msg["subject"][msg["subject"].rfind("(")+1:msg["subject"].rfind(")")].strip()
-    obj["location"] = unicode(obj["location"].replace("\n", ""))
+    obj["location"] = str(obj["location"].replace("\n", ""))
     obj["url"] = payload[payload.find("via http")+4:]
-    obj["url"] = unicode(obj["url"][:obj["url"].find("\n")].strip())
-    obj["description"] = unicode(payload[:payload.find("From search:")].replace("\n", " ").strip())
+    obj["url"] = str(obj["url"][:obj["url"].find("\n")].strip())
+    obj["description"] = str(payload[:payload.find("From search:")].replace("\n", " ").strip())
     obj["source"] = "ifttt"
     entries.append(obj)
     logging.debug(obj)
