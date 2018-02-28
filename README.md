@@ -1,5 +1,4 @@
 TODO:
-- Move map to be static on the right side of the page, while the table scrolls. Page should not scroll (or give the appearance of not scrolling)
 - Indicate new emails since last visit (only emails the user has not seen before)
 - Add the ability to set alerts for specific triggers (text). Have alerts send a text
 - Add better tagging to emails (ML). Consider trying out google NLP.

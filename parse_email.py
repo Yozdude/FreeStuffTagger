@@ -156,6 +156,8 @@ elif ("email_relay@freecycle.org" in msg["from"]) or ("email_relay@freecycle.org
     obj["url"] = payload[payload.find("http://groups.freecycle.org"):]
     obj["url"] = str(obj["url"][:obj["url"].find("\n")].strip())
     obj["description"] = str(payload[:payload.find("An image of this item can be seen at")].replace("\n", " ").strip())
+    if " -- You are getting this email because you are a member of the SanFrancisco Fre" in obj["description"]:
+        obj["description"] = str(obj["description"][:obj["description"].find(" -- You are getting this email because you are a member of the SanFrancisco Fre")].replace("\n", " ").strip())
     obj["source"] = "freecycle"
     entries.append(obj)
     logging.debug(obj)

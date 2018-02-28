@@ -6,13 +6,15 @@
         <span>Free Stuff Tagger</span>
     </a>
     <div class="menu">
-        <label for"preferences_modal class="button">Preferences</labal>
+        <label class="button">Entities</label>
+        <label class="button">Preferences</label>
     </div>
 </nav>
 {% endblock %}
 
 {% block body %}
-    <h2>Entries</h2>
+<div style="height: 20px; width: 100%"></div>
+<div style="width: 55%; height: 700px; overflow-y: scroll; display: inline-block;">
     <table id="entryTable" class="primary compact hover">
         <thead>
             <tr>
@@ -59,11 +61,10 @@
             {% endfor %}
         </tbody>
     </table>
-    <div id="map" style="height: 520px;"></div>
-
-    <div class="preferences_modal">
-        <h3>Preferences</h3>
-    </div>
+</div>
+<div style="width: 44%; display: inline-block;">
+    <div id="map" style="height: 700px;"></div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -82,7 +83,7 @@
                 "buttons": [
                     "colvis"
                 ],
-                "lengthMenu": [[50, 100, 250, -1], [50, 100, 250, "All"]],
+                "lengthMenu": [[-1], ["All"]],
                 "columnDefs": [
                     {
                         "targets": [0, 1],
@@ -92,7 +93,7 @@
                         "targets": [2, 3, 4, 6],
                         "visible": false,
                     }, {
-                        "targets": [8, 9],
+                        "targets": [8, 9, 10],
                         "searchable": false,
                         "orderable": false,
                         "visible": false
